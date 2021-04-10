@@ -11,7 +11,7 @@ ResourceTrace = namedtuple('ResourceTrace', ['t_mem', 'mem', 't_cpu', 'cpu'])
 
 
 class SamplingResourceMonitor:
-    def __init__(self, mem_frq=100, cpu_frq=5):
+    def __init__(self, mem_frq=10., cpu_frq=10.):
         self.mem_sleep_sec = 1.0 / mem_frq
         self.cpu_sleep_sec = 1.0 / cpu_frq
         self.baseline_time = time.time()
@@ -46,7 +46,9 @@ class SamplingResourceMonitor:
         return self.t_cpu, self.cpu
 
 
-def profile_function(func, args, mem_frq, cpu_frq):
+def profile_function(func, args=None, mem_frq=10., cpu_frq=10.):
+    if args is None:
+        args = []
     with Manager() as manager:
         e = manager.Event()
         with ProcessPoolExecutor() as executor:
@@ -54,7 +56,7 @@ def profile_function(func, args, mem_frq, cpu_frq):
             mem_proc = executor.submit(monitor.measure_mem, e)
             cpu_proc = executor.submit(monitor.measure_cpu, e)
             try:
-                fn_proc = executor.submit(func, args)
+                fn_proc = executor.submit(func, *args)
                 print(fn_proc.result())
             finally:
                 e.set()
